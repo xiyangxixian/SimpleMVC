@@ -46,7 +46,7 @@ class UploadFile extends SplFileObject{
     }
 
     public function save($name=null){
-        $path=config('UPLOAD_FILE')['PATH'].'/';
+        $path=config('UPLOAD_FILE','PATH').'/';
         if(preg_match('#/$#',$name)){
             $path=$path.$name;
             $name=null;
@@ -55,7 +55,7 @@ class UploadFile extends SplFileObject{
             $name=substr($name,$index+1);
         }
         if($name==null){
-            $rule=$this->rule==null?config('UPLOAD_FILE')['NAME_RULE']:$this->rule;
+            $rule=$this->rule==null?config('UPLOAD_FILE','NAME_RULE'):$this->rule;
             if($rule=='md5'){
                 $name=md5_file($this->tempName);
             }else{

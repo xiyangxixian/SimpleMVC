@@ -19,13 +19,13 @@ class Session {
     
     public function init(){
         if(!isset($_SESSION['this_session_timeout'])){
-            $_SESSION['session_timeout']=[];
+            $_SESSION['session_timeout']=array();
             $_SESSION['this_session_timeout']=time()+SESSION_TIMEOUT;
             return;
         }
         if($_SESSION['this_session_timeout']<time()){
-            $_SESSION=[];
-            $_SESSION['session_timeout']=[];
+            $_SESSION=array();
+            $_SESSION['session_timeout']=array();
             $_SESSION['this_session_timeout']=time()+SESSION_TIMEOUT;
             return;
         }

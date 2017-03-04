@@ -10,7 +10,7 @@ class Db {
     protected $options;
     
     protected static $tablePrefix='';
-    protected static $instanceArray=[];
+    protected static $instanceArray=array();
 
     private function __construct($tableName) {
         $this->currentTableName=$tableName;
@@ -61,9 +61,9 @@ class Db {
     }
     
     public function initOptons(){
-        $this->options=[];
-        $this->options['param']=[];
-        $this->options['where']=[];
+        $this->options=array();
+        $this->options['param']=array();
+        $this->options['where']=array();
         $this->options['join']=$this->currentTableName;
     }
     
@@ -83,7 +83,8 @@ class Db {
             return $this->getSql($sql);
         }
         $this->initOptons();
-        return $this->db->find($sql)[$count];
+        $result=$this->db->find($sql);
+        return $result[$count];
     }
     
     public function select($column='*'){
@@ -107,7 +108,7 @@ class Db {
     
     public function addAll(array $data=null){
        $currentData=$this->getData($data);
-       $dataArray=[];
+       $dataArray=array();
        foreach ($currentData as $item){
             $str='('.$this->getValues($item).')';
             $dataArray[]=$str;
@@ -131,20 +132,20 @@ class Db {
     }
     
     public function updateAll($case,array $data){
-        $arr=[];
+        $arr=$result;
         $keys=array_keys($data[0]);
-        $conditionArray=[];
+        $conditionArray=$result;
         foreach ($keys as $value){
             if($value==$case){
                 continue;
             }
-            $conditionArray[$value]=[];
+            $conditionArray[$value]=$result;
             foreach ($data as $item){
                 $conditionArray[$value][]='when ? then ?';
                 $arr[]=$item[$case];$arr[]=$item[$value];
             }
         }
-        $out=[];
+        $out=$result;
         foreach ($conditionArray as $key=>$value){
             $out[]='`'.$key.'`=case`'.$case.'` '.implode(' ', $value).' end';
         }
@@ -195,7 +196,7 @@ class Db {
     public static function query($sql,$param=null){
         $db=PDODriver::instance();
         if($param!=null){
-            $db->bind(is_array($param)?$param:[$param]);
+            $db->bind(is_array($param)?$param:array($param));
         }
         return $db->select($sql);
     }
@@ -203,7 +204,7 @@ class Db {
     public static function execute($sql,$param=null){
         $db=PDODriver::instance();
         if($param!=null){
-            $db->bind(is_array($param)?$param:[$param]);
+            $db->bind(is_array($param)?$param:array($param));
         }
         return $db->execute($sql);
     }
@@ -227,10 +228,10 @@ class Db {
     }
     
     public function setKeyAndValue(array $data){
-        $arr=[];
-        $keyAndValueArr=[];
+        $arr=array();
+        $keyAndValueArr=array();
         foreach ($data as $key => $value) {
-            $keyAndValueArr[] = '`'.$key.'`=?';
+            $keyAndValueArrarray() = '`'.$key.'`=?';
             $arr[]=$value;
         }
         $this->options['param']=array_merge($arr,$this->options['param']);
@@ -252,7 +253,7 @@ class Db {
             $data=$param;
         }else{
             $sql='`'.$column.'`'.' '.$condition.' ?';
-            $data=[$param];
+            $data=array($param);
         }
         $this->buildWhereOption($data,$sql);
         return $this;
@@ -376,7 +377,7 @@ class Db {
         if(is_array($param)){
             $this->db->bind($param);
         }else{
-            $this->db->bind([$param]);
+            $this->db->bind(array($param));
         }
         return $this;
     }

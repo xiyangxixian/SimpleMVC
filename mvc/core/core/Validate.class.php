@@ -10,7 +10,7 @@ class Validate {
     private $msg;
     private $error;
 
-    public function __construct($rules,array $msg=[]) {
+    public function __construct($rules,array $msg=array()) {
         if($rules instanceof ValidateRule){
             $this->rules=$rules->getRule();
             $this->msg=$rules->getMsg();
@@ -107,9 +107,9 @@ class Validate {
         $reflectionMethod=$reflection->getMethod($method);
         if(isset($arr[1])){
             $arg=$arr[1];
-            $result=$reflectionMethod->invokeArgs(null,[$data,$arg]);
+            $result=$reflectionMethod->invokeArgs(null,array($data,$arg));
         }else{
-            $result=$reflectionMethod->invokeArgs(null,[$data]);
+            $result=$reflectionMethod->invokeArgs(null,array($data));
         }
         return $result;
     }

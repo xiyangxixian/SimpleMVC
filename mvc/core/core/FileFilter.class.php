@@ -44,13 +44,11 @@ class FileFilter{
     }
     
     protected function setType(){
-        $config=config('UPLOAD_FILE');
-        return $config['TYPE'];
+        return config('UPLOAD_FILE','TYPE');
     }
     
     protected function setSize(){
-        $config=config('UPLOAD_FILE');
-        return $config['MAX_SIZE'];
+        return config('UPLOAD_FILE','MAX_SIZE');
     }
 
     public function changeType(array $type) {

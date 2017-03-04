@@ -9,7 +9,7 @@ class NewRouter {
     
 
     public function __construct(array $ipArray) {
-        $tempArray=[];
+        $tempArray=array();
         foreach ($ipArray as $value){
             $iparr=explode('/',$value);
             $ip=$iparr[0];
@@ -17,7 +17,7 @@ class NewRouter {
             if(isset($iparr[1])){
                 $prefix=$iparr[1];
             }
-            $tempArray[]=[IP::ipToInt($ip),$prefix];
+            $tempArray[]=array(IP::ipToInt($ip),$prefix);
         }
         $this->inputArray=$this->removeContainer($tempArray);
         $this->setCalculation(new CalculationImpl());

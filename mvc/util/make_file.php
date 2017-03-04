@@ -2,7 +2,8 @@
 
 function make_file() {
     
-    $module=explode(',',MOUDLE)[0];
+    $moduleArr=explode(',',MOUDLE);
+    $module=$moduleArr[0];
     
     //主文件夹
     $classDir = APP_PATH;
@@ -15,7 +16,7 @@ function make_file() {
     if (!file_exists($configFile)) {
         $file = fopen($configFile, "x+");
         $txt = '<?php
-    return [];';
+    return array();';
         fwrite($file, $txt);
         fclose($file);
     }

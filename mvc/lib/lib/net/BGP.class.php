@@ -79,14 +79,14 @@ class BGP {
     }
     
     public function addAllRouter(array $ipaddr){
-        $temparr=[];
+        $temparr=array();
         $i=0;
         foreach($ipaddr as $value){
             $temparr[]=$value;
             $i++;
             if($i==500){
                 $this->addList($temparr);
-                $temparr=[];
+                $temparr=array();
                 $i=0;
             }
         }
@@ -101,7 +101,7 @@ class BGP {
 //        $asArray=$this->getBits(self::$AS);
         $nextHop=$this->getIPArray(self::$NEXT_HOP);
         
-        $router=[];
+        $router=array();
         foreach ($ipaddr as $value){
             $iparr=explode('/',$value);
             if(!isset($iparr[1])){
@@ -134,14 +134,14 @@ class BGP {
 
     
     public function deleteAllRouter(array $ipaddr){
-        $temparr=[];
+        $temparr=array();
         $i=0;
         foreach($ipaddr as $value){
             $temparr[]=$value;
             $i++;
             if($i==500){
                 $this->deleteList($temparr);
-                $temparr=[];
+                $temparr=array();
                 $i=0;
             }
         }
@@ -154,7 +154,7 @@ class BGP {
     
     public function deleteList($ipaddr){
 //        $ipArray=$this->getIPArray($ipaddr);
-        $router=[];
+        $router=array();
         foreach ($ipaddr as $value){
             $iparr=explode('/',$value);
             if(!isset($iparr[1])){

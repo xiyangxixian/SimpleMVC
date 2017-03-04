@@ -17,13 +17,15 @@ class Macher {
     public function matchAll($str){
         $m=null;
         $len=preg_match_all($this->regex,$str,$m);
+        $out=array();
         for($i=0;$i<$len;$i++){
             $item=array();
             foreach($m as $value){
                 $item[]=$value[$i];
             }
-            yield $item;
+            $out[]=$item;
         }
+        return $out;
     }    
     
 }

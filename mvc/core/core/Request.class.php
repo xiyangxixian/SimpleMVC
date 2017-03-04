@@ -29,7 +29,7 @@ class Request {
         $port=$this->port()==80?'':':'.$this->port();
         $this->absoluteUrl=$this->server('REQUEST_SCHEME').'://'.$this->server['SERVER_NAME'].$port.$this->url(); 
         $this->init();
-        $this->header=[
+        $this->header=array(
             'host'=>isset($this->server['HTTP_HOST'])?$this->server['HTTP_HOST']:'',
             'connection'=>isset($this->server['HTTP_CONNECTION'])?$this->server['HTTP_CONNECTION']:'',
             'accept'=>isset($this->server['HTTP_ACCEPT'])?$this->server['HTTP_ACCEPT']:'',
@@ -37,7 +37,7 @@ class Request {
             'accept_language'=>isset($this->server['HTTP_ACCEPT_LANGUAGE'])?$this->server['HTTP_ACCEPT_LANGUAGE']:'',
             'upgrade_insecure_requests'=>isset($this->server['HTTP_UPGRADE_INSECURE_REQUESTS'])?$this->server['HTTP_UPGRADE_INSECURE_REQUESTS']:'',
             'user_agent'=>isset($this->server['HTTP_USER_AGENT'])?$this->server['HTTP_USER_AGENT']:'',
-        ];
+        );
     }
     
     public static function instance(){
@@ -79,21 +79,22 @@ class Request {
     
     public static function formatM($char){
         if(empty($char)){
-            return explode(',',MODULE)[0];
+            $out=explode(',',MODULE);
+            return $out[0];
         }
         return $char;
     }
 
     public static function formatC($char){
         if(empty($char)){
-            return config('ROUTER')['DEFAULT_CONTROLLER'];
+            return config('ROUTER','DEFAULT_CONTROLLER');
         }
         return small_to_hump($char);
     }
     
     public static function formatA($char){
         if(empty($char)){
-            return config('ROUTER')['DEFAULT_ACTION'];
+            return config('ROUTER','DEFAULT_ACTION');
         }
         return small_to_hump($char,false);
     }

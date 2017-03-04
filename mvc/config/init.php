@@ -11,9 +11,10 @@ function config(){
             $config=array_merge($config,$configArray);
         }
     }
-    if($key==null){
-        return $config;
+    $out=$config;
+    foreach ($keys as $key){
+        $out=$out[$key];
     }
-    return isset($config[$key])?$config[$key]:'';
+    return $out;
 }
 

@@ -10,7 +10,7 @@ class CalculationImpl implements Calculation{
     
     public function setData(array $array){
         $this->inputArray=$array;
-        $this->outputArray=[];
+        $this->outputArray=array();
     }
     
     public function getResult(){
@@ -23,7 +23,7 @@ class CalculationImpl implements Calculation{
         foreach ($this->inputArray as $ip){
             $prefix=$ip[1];
             if(!isset($this->allArray[$prefix])){
-                $this->allArray[$prefix]=[];
+                $this->allArray[$prefix]=array();
             }
             $this->allArray[$prefix][]=$ip[0];
         }
@@ -39,7 +39,7 @@ class CalculationImpl implements Calculation{
                     break; 
                 }
                 if(!isset($this->allArray[$i-1])){
-                    $this->allArray[$i-1]=[];
+                    $this->allArray[$i-1]=array();
                 }
                 $this->allArray[$i-1]=array_merge($this->allArray[$i-1],$result);
             }
@@ -47,7 +47,7 @@ class CalculationImpl implements Calculation{
     }
     
     private function getTempArray($oldArray,$prefix){
-        $tempArray = [];
+        $tempArray = array();
         $index=33-$prefix;
         $oldQuotient=-1;
         for ($i = 0, $len = count($oldArray); $i < $len; $i++) {
@@ -57,7 +57,7 @@ class CalculationImpl implements Calculation{
                 $tempArray[] = $oldArray[$i - 1];
             } else {
                 $oldQuotient= $quotient;
-                $this->outputArray[]=[$oldArray[$i],$prefix];
+                $this->outputArrayarray()=[$oldArray[$i],$prefix];
             }
         }
         return $tempArray;

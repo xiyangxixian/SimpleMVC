@@ -90,12 +90,12 @@ function public_import($view='index.php',$param=''){
 }
 
 function str_decode($str){
-    $pattern=[
+    $pattern=array(
         '#javascript[\S\s]*?:#i'
-    ];
-    $replacement=[
+    );
+    $replacement=array(
         ''
-    ];
+    );
     return preg_replace($pattern, $replacement,htmlspecialchars(escape_str(trim($str)),ENT_QUOTES));
 }
 
