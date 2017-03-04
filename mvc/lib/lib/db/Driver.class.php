@@ -7,7 +7,6 @@ abstract class Driver {
     
     protected $conn=null;
     protected $config=null;
-    protected $rowCount=0;
     protected static $insrance=null;
 
 
@@ -43,10 +42,6 @@ abstract class Driver {
         throw new Exception('error：' . $error);
     }
     
-    public function rowCount(){
-        return $this->rowCount;
-    }
-
     abstract function connect();
     abstract function query($sql);
     abstract function execute($sql);

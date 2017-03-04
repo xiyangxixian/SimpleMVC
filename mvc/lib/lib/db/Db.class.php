@@ -231,7 +231,7 @@ class Db {
         $arr=array();
         $keyAndValueArr=array();
         foreach ($data as $key => $value) {
-            $keyAndValueArrarray() = '`'.$key.'`=?';
+            $keyAndValueArr[] = '`'.$key.'`=?';
             $arr[]=$value;
         }
         $this->options['param']=array_merge($arr,$this->options['param']);
