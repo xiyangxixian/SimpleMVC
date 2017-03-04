@@ -1,0 +1,2 @@
+<h1 style="margin-top:3%;margin-bottom:3%;font-family:微软雅黑;font-size:100px;font-weight:normal;text-align:left;padding-left:50px;margin-bottom:30px;">:(  &nbsp</h1>
+<h3 style="font-size:20px;padding-left:50px;line-height:2.0;"><?php echo $msg ?></h3>
