@@ -9,13 +9,13 @@ class Model {
     
     public function __construct(array $attribute=array()) {
         $this->attribute=$attribute;
-        $this->db=db($this->table());
+        $this->db=db(static::table());
         $this->init();
     }
     
     public function init(){}
     
-    protected function table(){
+    protected static function table(){
         $name=strrchr(get_class($this),'\\');
         return hump_to_small(substr($name,1));
     }
@@ -63,7 +63,17 @@ class Model {
     }
     
     public function where($column,$mixed,$param){
+        $this->db->where($column,$mixed,$param);
+        return $this;
+    }
+    
+    public function xwhere($column,$mixed,$param){
         $this->db->xwhere($column,$mixed,$param);
         return $this;
     }
+    
+    public static function db(){
+        return db(self::table());
+    }
+    
 }

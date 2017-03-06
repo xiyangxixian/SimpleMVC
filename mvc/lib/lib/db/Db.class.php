@@ -170,7 +170,17 @@ class Db {
     
     private function seleteSql($column){
         $distinct=isset($this->options['distinct'])?'distinct ':'';
-        $sql='select '.$distinct.$column.' from '.$this->options['join'].$this->getOption();
+        $columns=explode(',', $column);
+        $arr=array();
+        foreach ($columns as $value){
+            $fields=explode(' ', $value);
+            $field='`'.$fields[0].'`';
+            if(isset($fields[1])){
+                $field='`'.$fields[0].'` `'.$fields[1].'`';
+            }
+            $arr[]=$field;
+        }
+        $sql='select '.$distinct.implode(',', $arr).' from '.$this->options['join'].$this->getOption();
         $this->bind($this->options['param']);
         return $sql;
     }
@@ -239,8 +249,7 @@ class Db {
     }
     
     public function where($column,$mixed,$param=null){
-        $args=func_get_args();
-        if($param==null){
+        if($param===null){
             $condition='=';
             $param=$mixed;
         }else{
@@ -260,7 +269,7 @@ class Db {
     }
     
     public function xwhere($column,$mixed,$param=null){
-        if(empty($param)&&empty($mixed)){
+        if(empty($param)||($param!==null&&empty($param))){
             return $this;
         }
         return $this->where($column,$mixed,$param);
