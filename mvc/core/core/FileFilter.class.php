@@ -22,7 +22,7 @@ class FileFilter{
         return $this->doFilter($this->file[$key]);
     }
     
-    public function files($key){
+    public function files($key,$all=true){
         if(!isset($this->file[$key])){
             $this->file[$key]=array();
             $len=0;
@@ -32,13 +32,15 @@ class FileFilter{
         }
         $out=array();
         for($i=0;$i<$len;$i++){
-            $out[]=$this->doFilter(array(
+            $file=$this->doFilter(array(
                 'name'=>$file['name'][$i],
                 'type'=>$file['type'][$i],
                 'tmp_name'=>$file['tmp_name'][$i],
                 'size'=>$file['size'][$i],
                 'error'=>$file['error'][$i]
             ));
+            if($file==null&&$all){return null;}
+            $out[]=$file;
         }
         return $out;
     }

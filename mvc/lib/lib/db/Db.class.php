@@ -8,6 +8,7 @@ class Db {
     protected $db=null;
     protected $currentTableName='';
     protected $options;
+    protected $saveOption=array();
     
     protected static $tablePrefix='';
     protected static $instanceArray=array();
@@ -49,9 +50,9 @@ class Db {
         return self::$tablePrefix.$tableName;
     }
     
-    public function init(){
+    private function init(){
         $this->createDriver();
-        $this->initOptons();
+        $this->initOptions();
     }
 
     public function createDriver(){
@@ -60,39 +61,52 @@ class Db {
         }
     }
     
-    public function initOptons(){
-        $this->options=array();
-        $this->options['param']=array();
+    private function initOptions(){
         $this->options['where']=array();
-        $this->options['join']=$this->currentTableName;
+        $this->options['whereParam']=array();
+        $this->options['dataParam']=array();
+        $this->options['or']=array();
+        $this->options['orParam']=array();
+        $this->options['havingParam']=array();
+        $this->options['join']=array();
+        $this->options['join'][]=$this->currentTableName;
+        $this->options=array_merge($this->options,$this->saveOption);
     }
     
-    public function find($column='*'){
-        $sql=$this->seleteSql($column);
+    public function saveOptions(){
+        $this->saveOption=$this->options;
+    }
+    
+    public function clearOptions(){
+        $this->saveOption=array();
+        $this->initOptions();
+    }
+    
+    public function find($column=null){
+        $sql=$this->selectSql($column);
         if(isset($this->options['sql'])){
             return $this->getSql($sql);
         }
-        $this->initOptons();
+        $this->initOptions();
         return $this->db->find($sql);
     }
     
-    public function count($column='*'){
-        $count='count('.$column.')';
-        $sql=$this->seleteSql($count);
+    public function count($column=null){
+        $sql=$this->selectSql($column.'|count[`count`]');
         if(isset($this->options['sql'])){
             return $this->getSql($sql);
         }
-        $this->initOptons();
+        $this->initOptions();
         $result=$this->db->find($sql);
-        return $result[$count];
+        return $result['count'];
     }
     
-    public function select($column='*'){
-        $sql=$this->seleteSql($column);
+    public function select($column=null){
+        $sql=$this->selectSql($column);
         if(isset($this->options['sql'])){
             return $this->getSql($sql);
         }
-        $this->initOptons();
+        $this->initOptions();
         return $this->db->select($sql);
     }
 
@@ -102,7 +116,7 @@ class Db {
         if(isset($this->options['sql'])){
             return $this->getSql($sql);
         }
-        $this->initOptons();
+        $this->initOptions();
         return $this->db->execute($sql);
     }
     
@@ -117,7 +131,7 @@ class Db {
        if(isset($this->options['sql'])){
            return $this->getSql($sql);
         }
-       $this->initOptons();
+       $this->initOptions();
        return $this->db->execute($sql);
     }
     
@@ -127,34 +141,34 @@ class Db {
         if(isset($this->options['sql'])){
             return $this->getSql($sql);
         }
-        $this->initOptons();
+        $this->initOptions();
         return $this->db->execute($sql);
     }
     
     public function updateAll($case,array $data){
-        $arr=$result;
+        $arr=array();
         $keys=array_keys($data[0]);
-        $conditionArray=$result;
+        $conditionArray=array();
         foreach ($keys as $value){
             if($value==$case){
                 continue;
             }
-            $conditionArray[$value]=$result;
+            $conditionArray[$value]=array();
             foreach ($data as $item){
                 $conditionArray[$value][]='when ? then ?';
                 $arr[]=$item[$case];$arr[]=$item[$value];
             }
         }
-        $out=$result;
+        $out=array();
         foreach ($conditionArray as $key=>$value){
             $out[]='`'.$key.'`=case`'.$case.'` '.implode(' ', $value).' end';
         }
-        $this->options['param']=array_merge($arr,$this->options['param']);
+        $this->options['dataParam']=array_merge($this->options['dataParam'],$arr);
         $sql=$this->updateSql(implode(',',$out));
         if(isset($this->options['sql'])){
             return $this->getSql($sql);
         }
-        $this->initOptons();
+        $this->initOptions();
         return $this->db->execute($sql);
     }
 
@@ -164,42 +178,75 @@ class Db {
         if(isset($this->options['sql'])){
             return $this->getSql($sql);
         }
-        $this->initOptons();
+        $this->initOptions();
         return $this->db->execute($sql);
     }
     
-    private function seleteSql($column){
+    private function selectSql($column){
         $distinct=isset($this->options['distinct'])?'distinct ':'';
-        $columns=explode(',', $column);
+        $sql='select '.$distinct.$this->buildFeilds($column).' from '.$this->buildJoin().$this->getOption();
+        $this->bind();
+        return $sql;
+    }
+    
+    private function buildFeilds($column){
+        if(empty($column)||$column=='*'){
+            return '*';
+        }
+        $columns=is_array($column)?$column:explode(',', $column);
         $arr=array();
         foreach ($columns as $value){
-            $fields=explode(' ', $value);
-            $field='`'.$fields[0].'`';
-            if(isset($fields[1])){
-                $field='`'.$fields[0].'` `'.$fields[1].'`';
-            }
-            $arr[]=$field;
+            $arr[]=$this->formatFeild($value);
         }
-        $sql='select '.$distinct.implode(',', $arr).' from '.$this->options['join'].$this->getOption();
-        $this->bind($this->options['param']);
-        return $sql;
+        return implode(',', $arr);
+    }
+    
+    private function formatFeild($field){
+        $result=preg_match('/\[(.+?)\]/',$field,$m);
+        $alias='';
+        if($result&&isset($m[1])){
+            $alias=$this->addSlashes($m[1]);
+            $field=preg_replace('/\[(.+?)\]/','',$field);
+        }
+        if(strpos($field,'|')===false){
+            return $this->addSlashes($field).' '.$alias;
+        }
+        $fieldArr=explode('|', $field);
+        $column=$this->addSlashes(array_shift($fieldArr));
+        foreach ($fieldArr as $fun){
+            $params=explode(':',$fun);
+            $funName=array_shift($params);
+            array_unshift($params,$column);
+            $column=$funName.'('.implode(',',$params).')';
+        }
+        return $column.' '.$alias;
+    }
+    
+    private function addSlashes($field){
+        if($field=='*'||empty($field)){
+            return '*';
+        }
+        if(strpos($field,'`')!==false||strpos($field,'(')!==false){
+            return $field;
+        }
+        return '`'.$field.'`';
     }
     
     private function insertSql($data){
         $sql='insert into '.$this->currentTableName.' '.$data;
-        $this->bind($this->options['param']);
+        $this->bind();
         return $sql;
     }
 
     private function updateSql($data){
         $sql='update '.$this->currentTableName.' set '.$data.$this->getOption();
-        $this->bind($this->options['param']);
+        $this->bind();
         return $sql;
     }
 
     private function deleteSql(){
         $sql='delete from '.$this->currentTableName.$this->getOption();
-        $this->bind($this->options['param']);
+        $this->bind();
         return $sql;
     }
 
@@ -219,7 +266,6 @@ class Db {
         return $db->execute($sql);
     }
 
-
     private function getData($data){
         if($data!=null){
             $this->options['data']=$data;
@@ -233,7 +279,7 @@ class Db {
     }
     
     public function getValues(array $data){
-        $this->options['param']=array_merge($this->options['param'],array_values($data));
+        $this->options['dataParam']=array_merge($this->options['dataParam'],array_values($data));
         return substr(str_repeat(',?',count($data)),1);
     }
     
@@ -244,7 +290,7 @@ class Db {
             $keyAndValueArr[] = '`'.$key.'`=?';
             $arr[]=$value;
         }
-        $this->options['param']=array_merge($arr,$this->options['param']);
+        $this->options['dataParam']=array_merge($this->options['dataParam'],$arr);
         return implode(',', $keyAndValueArr);
     }
     
@@ -286,13 +332,39 @@ class Db {
         return $this;
     }
     
-    private function buildWhereOption($options,$condition){
-        if(isset($this->options['having'])){
-            $this->options['param']=array_merge($options,$this->options['param']);
+    public function whereOr($column,$mixed,$param=null,$group=null){
+        if($param===null){
+            $condition='=';
+            $param=$mixed;
         }else{
-            $this->options['param']=array_merge($this->options['param'],$options);
+            $condition=$mixed;
         }
+        $group=$group===null?'db':$group;
+        $sql='';
+        $data=null;
+        if($condition=='in'){
+            $sql=self::whereIn($column,$param);
+            $data=$param;
+        }else{
+            $sql='`'.$column.'`'.' '.$condition.' ?';
+            $data=array($param);
+        }
+        $this->buildOrOption($data,$sql,$group);
+        return $this;
+    }
+    
+    private function buildWhereOption($options,$condition){
+        $this->options['whereParam']=array_merge($this->options['whereParam'],$options);
         $this->options['where'][]=$condition;
+    }
+    
+    private function buildOrOption($options,$condition,$group){
+        if(!isset($this->options['or'][$group])){
+            $this->options['or'][$group]=array();
+            $this->options['orParam'][$group]=array();
+        }
+        $this->options['orParam'][$group]=array_merge($this->options['orParam'][$group],$options);
+        $this->options['or'][$group][]=$condition;
     }
     
     public function data(array $data){
@@ -341,22 +413,30 @@ class Db {
         }
         $args=func_get_args();
         array_shift($args);
-        $this->options['param']=array_merge($this->options['param'],$args);
+        $this->options['havingParam']=array_merge($this->options['havingParam'],$args);
         $this->options['having']='having '.$having;
         return $this;
     }
     
     public function join($table,$condition,$type='inner'){
         $currentTable=self::getCurrentTableName($table);
-        $join=$this->options['join'];
-        if($join==$this->currentTableName){
-           $join.=' '.$type.' join '.$currentTable.' on '.$condition;
-        }else{
-           $join=preg_replace('#^.+$#','($0)', $this->options['join']);
-           $join.=' '.$type.' join '.$currentTable.' on '.$condition;
-        }
-        $this->options['join']=$join;
+        $this->options['join'][]=$type.' join '.$currentTable.' on '.$condition;
         return $this;
+    }
+    
+    private function buildJoin(){
+        $join=$this->options['join'];
+        $i=0;
+        $out='';
+        foreach ($join as $item){
+            if($i===0){
+                $out.=$item;
+            }else if($i>0){
+                $out=' ('.$out.' '.$item.')';
+            }
+            $i++;
+        }
+        return $out;
     }
 
 
@@ -371,18 +451,23 @@ class Db {
     }
     
     public function getSql($sql){
-        foreach ($this->options['param'] as $value){
+        foreach (array_merge($this->options['dataParam'],$this->options['whereParam'],$this->options['havingParam']) as $value){
             if(is_string($value)){
-               $sql=preg_replace('#\?#','\''.$value.'\'',$sql,1);
+               $sql=preg_replace('/\?/','\''.$value.'\'',$sql,1);
             }else{
-               $sql=preg_replace('#\?#',$value,$sql,1); 
+               $sql=preg_replace('/\?/',$value,$sql,1); 
             }
         }
         return $sql;
     }
 
 
-    private function bind($param){
+    private function bind($param=null){
+        if($param===null){
+            $optionArr=array_merge($this->options['dataParam'],$this->options['whereParam'],$this->options['havingParam']);
+            $this->db->bind($optionArr);
+            return $this;
+        }
         if(is_array($param)){
             $this->db->bind($param);
         }else{
@@ -393,8 +478,21 @@ class Db {
 
     public function getOption(){
         $option='';
+        $optionWhere=array();
         if(isset($this->options['where'])&&!empty($this->options['where'])){
-            $option.=' where ('.implode(') and (', $this->options['where']).')';
+            $optionWhere[]='('.implode(') and (', $this->options['where']).')';
+        }
+        if(isset($this->options['or'])&&!empty($this->options['or'])){
+            $tempArr=array();
+            foreach ($this->options['or'] as $key=>$value){
+                $tempArr[]='('.implode(') or (', $value).')';
+                $params=$this->options['orParam'][$key];
+                $this->options['whereParam']=array_merge($this->options['whereParam'],$params);
+            }
+            $optionWhere[]='('.implode(') and (', $tempArr).')';
+        }
+        if(!empty($optionWhere)){
+            $option.=' where '.implode(' and ',$optionWhere);
         }
         if(isset($this->options['group'])){
             $option.=' '.$this->options['group'];

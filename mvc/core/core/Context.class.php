@@ -143,7 +143,15 @@ class Context {
             response()->noFound(config('404_PAGE'));
             return;
         }
-        $method->invokeArgs($instance,$params);
+        $result=$method->invokeArgs($instance,$params);
+        if($result===null){
+            return;
+        }
+        if(is_array($result)){
+            echo json_encode($result);
+        }else{
+            echo $result;
+        }
     }
     
     private function getParams($method){

@@ -62,6 +62,10 @@ class Curl {
     }
     
     public function saveUrl($url){
+        if(strpos($url,'https://')!==false){
+            $this->saveOption(CURLOPT_SSL_VERIFYPEER, false);
+            $this->saveOption(CURLOPT_SSL_VERIFYHOST, 0);
+        }
         $this->saveOption(CURLOPT_URL,$url); 
          return $this;
     }
@@ -78,6 +82,10 @@ class Curl {
     
     private function setUrl($url){
         if($url!=null){
+            if(strpos($url,'https://')!==false){
+                $this->setOption(CURLOPT_SSL_VERIFYPEER, false);
+                $this->setOption(CURLOPT_SSL_VERIFYHOST, 0);
+            }
             $this->setOption(CURLOPT_URL,$url); 
         }
          return $this;
@@ -116,20 +124,26 @@ class Curl {
         return $this->excuse();
     }
     
-    public function post($url=null,array $param=array(),array $header=array()){
+    public function post($urlORparam=null,$paramORheader=null,array $header=array()){
         $this->setOption(CURLOPT_POST,true);
-        if(is_array($url)){
-            $this->excuseOption(null,$header);
-            $this->setOption(CURLOPT_POSTFIELDS,$url);
+        if(strpos($urlORparam,'http')===false){
+            $this->excuseOption(null,$paramORheader);
+            $this->setOption(CURLOPT_POSTFIELDS,$urlORparam);
         }else{
-            $this->excuseOption($url,$header);
-            $this->setOption(CURLOPT_POSTFIELDS,$param);
+            $this->excuseOption($urlORparam,$header);
+            $this->setOption(CURLOPT_POSTFIELDS,$paramORheader);
         }
         return $this->excuse();
     }
     
-    public function code($url=null,array $header=array()){
-        $this->excuseOption($url,$header);
+    public function code($urlORparam=null,$paramORheader=null,array $header=array()){
+        if(strpos($urlORparam,'http')===false){
+            $this->excuseOption(null,$paramORheader);
+            $this->setOption(CURLOPT_POSTFIELDS,$urlORparam);
+        }else{
+            $this->excuseOption($urlORparam,$header);
+            $this->setOption(CURLOPT_POSTFIELDS,$paramORheader);
+        }
         $this->setOption(CURLOPT_HEADER,true);
         $this->setOption(CURLOPT_NOBODY,true);
         $this->excuse();

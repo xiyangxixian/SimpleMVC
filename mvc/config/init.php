@@ -1,7 +1,6 @@
 <?php
 
-function config(){
-    $keys=func_get_args();
+function config($key1=null,$key2=null,$key3=null){
     static $config=null;
     if($config==null){
         $config=array();
@@ -11,10 +10,15 @@ function config(){
             $config=array_merge($config,$configArray);
         }
     }
-    $out=$config;
-    foreach ($keys as $key){
-        $out=$out[$key];
+    if($key1===null){
+        return $config;
     }
-    return $out;
+    if($key2===null){
+        return $config[$key1];
+    }
+    if($key3==null){
+        return $config[$key1][$key2];
+    }
+    return $config[$key1][$key2][$key3];
 }
 
