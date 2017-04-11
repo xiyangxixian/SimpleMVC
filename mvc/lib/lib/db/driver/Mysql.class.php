@@ -41,7 +41,9 @@ class Mysql extends Driver{
     public function execute($sql){
         $this->initConnect();
         $stmt=$this->conn->prepare($sql);
-        $result=$stmt->execute($this->param);
+        $method=new \ReflectionMethod($stmt,'bind_param');
+        $method->invokeArgs($stmt, $this->refValues($this->param));
+        $result=$stmt->execute();
         $this->param=null;
         return $result;
     }
