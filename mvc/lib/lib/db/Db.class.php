@@ -1,11 +1,12 @@
 <?php
 
 namespace lib\db;
+use lib\db\driver\Mysql;
 use lib\db\driver\PDODriver;
 
 class Db {
     
-    protected $db=null;
+    protected static $db=null;
     protected $currentTableName='';
     protected $options;
     protected $saveOption=array();
@@ -32,7 +33,13 @@ class Db {
     
     public static function loadConfig(array $config){
         self::$tablePrefix=isset($config['DB_PREFIX'])?$config['DB_PREFIX']:'';
-        PDODriver::instance()->loadConfig($config);
+        $dbtype=isset($config['DB_TYPE'])?$config['DB_TYPE']:'pdo';
+        if($dbtype=='mysql'){
+            self::$db=Mysql::instance();
+        }else{
+            self::$db=PDODriver::instance();
+        }
+        self::$db->loadConfig($config);
     }
     
     private static function whereIn($column,array $array){
@@ -51,14 +58,7 @@ class Db {
     }
     
     private function init(){
-        $this->createDriver();
         $this->initOptions();
-    }
-
-    public function createDriver(){
-        if($this->db==null){
-            $this->db=PDODriver::instance();  
-        }
     }
     
     private function initOptions(){
@@ -88,7 +88,7 @@ class Db {
             return $this->getSql($sql);
         }
         $this->initOptions();
-        return $this->db->find($sql);
+        return self::$db->find($sql);
     }
     
     public function count($column=null){
@@ -97,7 +97,7 @@ class Db {
             return $this->getSql($sql);
         }
         $this->initOptions();
-        $result=$this->db->find($sql);
+        $result=self::$db->find($sql);
         return $result['count'];
     }
     
@@ -107,7 +107,7 @@ class Db {
             return $this->getSql($sql);
         }
         $this->initOptions();
-        return $this->db->select($sql);
+        return self::$db->select($sql);
     }
 
     public function add(array $data=null){
@@ -117,7 +117,7 @@ class Db {
             return $this->getSql($sql);
         }
         $this->initOptions();
-        return $this->db->execute($sql);
+        return self::$db->execute($sql);
     }
     
     public function addAll(array $data=null){
@@ -132,7 +132,7 @@ class Db {
            return $this->getSql($sql);
         }
        $this->initOptions();
-       return $this->db->execute($sql);
+       return self::$db->execute($sql);
     }
     
     public function update(array $data=null){
@@ -142,7 +142,7 @@ class Db {
             return $this->getSql($sql);
         }
         $this->initOptions();
-        return $this->db->execute($sql);
+        return self::$db->execute($sql);
     }
     
     public function updateAll($case,array $data){
@@ -169,7 +169,7 @@ class Db {
             return $this->getSql($sql);
         }
         $this->initOptions();
-        return $this->db->execute($sql);
+        return self::$db->execute($sql);
     }
 
 
@@ -179,7 +179,7 @@ class Db {
             return $this->getSql($sql);
         }
         $this->initOptions();
-        return $this->db->execute($sql);
+        return self::$db->execute($sql);
     }
     
     private function selectSql($column){
@@ -465,13 +465,13 @@ class Db {
     private function bind($param=null){
         if($param===null){
             $optionArr=array_merge($this->options['dataParam'],$this->options['whereParam'],$this->options['havingParam']);
-            $this->db->bind($optionArr);
+            self::$db->bind($optionArr);
             return $this;
         }
         if(is_array($param)){
-            $this->db->bind($param);
+            self::$db->bind($param);
         }else{
-            $this->db->bind(array($param));
+            self::$db->bind(array($param));
         }
         return $this;
     }

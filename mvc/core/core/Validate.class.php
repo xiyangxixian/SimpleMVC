@@ -9,6 +9,7 @@ class Validate {
     private $rules;
     private $msg;
     private $error;
+    private $scene=null;
 
     public function __construct($rules,array $msg=array()) {
         if($rules instanceof ValidateRule){
@@ -25,10 +26,11 @@ class Validate {
         if($isRescursion){
             $this->error=array();
             foreach ($this->rules as $key=>$rule){
-                if(!isset($data[$key])&&strpos($rule,'required')!==false){
-                    $this->error[$key]='缺少参数'.$key;
-                    $checkResult=false;
+                if($this->scene!==null&&!in_array($key,$this->scene)){
                     continue;
+                }
+                if(!isset($data[$key])){
+                    $data[$key]=null;
                 }
                 $result=$this->checkOneForResult($key,$rule,$data[$key]);
                 if($result!==true){
@@ -39,9 +41,12 @@ class Validate {
         }else{
             $this->error=null;
             foreach ($this->rules as $key=>$rule){
-                if(!isset($data[$key])&&strpos($rule,'required')!==false){
-                    $this->error='缺少参数'.$key;
-                    return false;
+                if($this->scene!==null&&!in_array($key,$this->scene)){
+                    $result=$this->checkOneForResult($key,$rule,null);
+                    continue;
+                }
+                if(!isset($data[$key])){
+                    $data[$key]=null;
                 }
                 $result=$this->checkOneForResult($key,$rule,$data[$key]);
                 if($result!==true){
@@ -53,12 +58,16 @@ class Validate {
         return $checkResult;
     }
     
+    public function scene ($arr){
+        $this->scene=$arr;
+    }
+    
     private final function checkOneForResult($key,$rule,$value){
         if(empty($rule)){
            $rule='emptyValidate';
         }
         $msg=isset($this->msg[$key])?$this->msg[$key]:'';
-        $result=self::checkData($value,$rule,$msg);
+        $result=self::checkItem($value,$rule,$msg);
         return $result;
     }
     
@@ -74,14 +83,18 @@ class Validate {
         return __CLASS__;
     }
     
-    public final static function checkData($data,$rules,$msg=''){
+    public final static function checkItem($data,$rules,$msg=''){
         $reflection=new ReflectionClass(static::getClassName());
         $result=self::staticInvoke($reflection,trim($data),$rules);
         return self::getMsg($msg,$result);
     }
     
+    private static function getMethods($rules){
+        return is_array($rules)?$rules:explode('|', $rules);
+    }
+    
     private final static function staticInvoke(ReflectionClass $reflection,$data,$rules){
-        $methods=explode('|', $rules);
+        $methods=self::getMethods($rules);
         $reqIndex=array_search('required',$methods);
         $index=0;
         if(!self::required($data)){
@@ -119,8 +132,9 @@ class Validate {
         if($result===true){
             return true;
         }else{
-            $msgs=explode('|', $msg);
-            return isset($msgs[$result])?$msgs[$result]:'';
+            $msgs=is_array($msg)?$msg:explode('|', $msg);
+            $currentMsg=empty($msgs)?'':isset($msgs[$result])?$msgs[$result]:array_pop($msg);
+            return $currentMsg;
         }
     }
     
@@ -178,7 +192,7 @@ class Validate {
     
     public final static function port($value){
         $port=intval($value);
-        return $port>=0&&$port<=65535;
+        return strpos($value,'.')===false&&$port>=1&&$port<=65535;
     }
     
     public final static function ip($value){

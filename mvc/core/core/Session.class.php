@@ -78,7 +78,7 @@ class Session {
     }
     
     public function isActive(){
-        return session_status()==PHP_SESSION_ACTIVE?true:false;
+        return isset($_SESSION)?true:false;
     }
     
 }

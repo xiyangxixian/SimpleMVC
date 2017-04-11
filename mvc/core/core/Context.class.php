@@ -125,7 +125,7 @@ class Context {
             response()->error(ROOT_PATH.'common/page/error.php',$error);
         }
         $control=new $class();
-        if(!is_callable([$control,$action])){
+        if(!is_callable(array($control,$action))){
             $error = $controller.'控制器非法操作：'.$action;
             response()->error(ROOT_PATH.'common/page/error.php',$error);
         }

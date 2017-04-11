@@ -1,6 +1,6 @@
 <?php
 use lib\db\Db;
-defined('APP_PATH') or define("APP_PATH", "./app/");
+defined('APP_PATH') or define("APP_PATH", __dir__.'/app/');
 defined('MOUDLE') or define("MOUDLE",'home');
 defined('DEBUG') or define("DEBUG",true);
 defined('ROOT_PATH') or define("ROOT_PATH",__dir__.'/');
