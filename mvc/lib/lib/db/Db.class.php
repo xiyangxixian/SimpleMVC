@@ -41,24 +41,37 @@ class Db {
         }
         self::$db->loadConfig($config);
     }
-    
-    private static function whereIn($column,array $array){
-        $sql=str_repeat(',?',count($array));
-        $sql=substr($sql,1);
-        $sql='`'.$column.'` in ('.$sql.')';
-        return $sql;
-    }
 
     public static function getCurrentTableName($tableName){
+        $currentTableName=null;
         if(strpos($tableName,'/')!=false){
-            $tableName=substr($tableName,1);
-            return $tableName;
+            $currentTableName=substr($tableName,1);
+        }else{
+            $currentTableName=self::$tablePrefix.$tableName;
         }
-        return self::$tablePrefix.$tableName;
+        $aliasArr=self::getAlias($currentTableName);
+        return '`'.$aliasArr[0].'`'.(empty($aliasArr[1])?'':' AS '.$aliasArr[1]);
+    }
+    
+    private static function getAlias($str){
+        $result=preg_match('/\[(.+?)\]/',$str,$m);
+        $alias=null;
+        if($result&&isset($m[1])){
+            $alias='`'.($m[1]).'`';
+            $str=preg_replace('/\[(.+?)\]/','',$str);
+        }
+        return array($str,$alias);
     }
     
     private function init(){
+        self::checkDb();
         $this->initOptions();
+    }
+    
+    private static function checkDb(){
+        if(self::$db==null){
+            throw new \Exception('Can not load database driver.The config may not set up.');
+        }
     }
     
     private function initOptions(){
@@ -92,13 +105,28 @@ class Db {
     }
     
     public function count($column=null){
-        $sql=$this->selectSql($column.'|count[`count`]');
-        if(isset($this->options['sql'])){
-            return $this->getSql($sql);
-        }
-        $this->initOptions();
-        $result=self::$db->find($sql);
-        return $result['count'];
+        $result=$this->find($column.'|count[`count`]');
+        return isset($result['count'])?$result['count']:$result;
+    }
+    
+    public function max($column=null){
+        $result=$this->find($column.'|max[`max`]');
+        return isset($result['max'])?$result['max']:$result;
+    }
+    
+    public function min($column=null){
+        $result=$this->find($column.'|min[`min`]');
+        return isset($result['min'])?$result['min']:$result;
+    }
+    
+    public function avg($column=null){
+        $result=$this->find($column.'|avg[`avg`]');
+        return isset($result['avg'])?$result['avg']:$result;
+    }
+    
+    public function sum($column=null){
+        $result=$this->find($column.'|sum[`sum`]');
+        return isset($result['sum'])?$result['sum']:$result;
     }
     
     public function select($column=null){
@@ -112,7 +140,7 @@ class Db {
 
     public function add(array $data=null){
         $currentData=$this->getData($data);
-        $sql=$this->insertSql('('.  $this->getKeys($currentData).') values ('.$this->getValues($currentData).')');
+        $sql=$this->insertSql('('.  $this->getKeys($currentData).') VALUES ('.$this->getValues($currentData).')');
         if(isset($this->options['sql'])){
             return $this->getSql($sql);
         }
@@ -127,7 +155,7 @@ class Db {
             $str='('.$this->getValues($item).')';
             $dataArray[]=$str;
        }
-       $sql=$this->insertSql('('.  $this->getKeys($currentData[0]).') values '.  implode(',',$dataArray));
+       $sql=$this->insertSql('('.  $this->getKeys($currentData[0]).') VALUES '.  implode(',',$dataArray));
        if(isset($this->options['sql'])){
            return $this->getSql($sql);
         }
@@ -155,13 +183,13 @@ class Db {
             }
             $conditionArray[$value]=array();
             foreach ($data as $item){
-                $conditionArray[$value][]='when ? then ?';
+                $conditionArray[$value][]='WHEN ? THEN ?';
                 $arr[]=$item[$case];$arr[]=$item[$value];
             }
         }
         $out=array();
         foreach ($conditionArray as $key=>$value){
-            $out[]='`'.$key.'`=case`'.$case.'` '.implode(' ', $value).' end';
+            $out[]='`'.$key.'`=CASE`'.$case.'` '.implode(' ', $value).' END';
         }
         $this->options['dataParam']=array_merge($this->options['dataParam'],$arr);
         $sql=$this->updateSql(implode(',',$out));
@@ -183,8 +211,26 @@ class Db {
     }
     
     private function selectSql($column){
-        $distinct=isset($this->options['distinct'])?'distinct ':'';
-        $sql='select '.$distinct.$this->buildFeilds($column).' from '.$this->buildJoin().$this->getOption();
+        $distinct=isset($this->options['distinct'])?'DISTINST ':'';
+        $sql='SELECT '.$distinct.$this->buildFeilds($column).' FROM '.$this->buildJoin().$this->getOption();
+        $this->bind();
+        return $sql;
+    }
+    
+    private function insertSql($data){
+        $sql='INSERT INTO '.$this->currentTableName.' '.$data;
+        $this->bind();
+        return $sql;
+    }
+
+    private function updateSql($data){
+        $sql='UPDATE '.$this->currentTableName.' SET '.$data.$this->getOption();
+        $this->bind();
+        return $sql;
+    }
+
+    private function deleteSql(){
+        $sql='DELETE FROM '.$this->currentTableName.$this->getOption();
         $this->bind();
         return $sql;
     }
@@ -202,14 +248,11 @@ class Db {
     }
     
     private function formatFeild($field){
-        $result=preg_match('/\[(.+?)\]/',$field,$m);
-        $alias='';
-        if($result&&isset($m[1])){
-            $alias=$this->addSlashes($m[1]);
-            $field=preg_replace('/\[(.+?)\]/','',$field);
-        }
+        $aliasArr=$this->getAlias($field);
+        $alias=$aliasArr[0];
+        $field=$aliasArr[1];
         if(strpos($field,'|')===false){
-            return $this->addSlashes($field).' '.$alias;
+            return $this->addSlashes($field).(empty($alias)?'':' AS '.$alias);
         }
         $fieldArr=explode('|', $field);
         $column=$this->addSlashes(array_shift($fieldArr));
@@ -217,9 +260,9 @@ class Db {
             $params=explode(':',$fun);
             $funName=array_shift($params);
             array_unshift($params,$column);
-            $column=$funName.'('.implode(',',$params).')';
+            $column=strtoupper($funName).'('.implode(',',$params).')';
         }
-        return $column.' '.$alias;
+        return $column.(empty($alias)?'':' AS '.$alias);
     }
     
     private function addSlashes($field){
@@ -231,39 +274,21 @@ class Db {
         }
         return '`'.$field.'`';
     }
-    
-    private function insertSql($data){
-        $sql='insert into '.$this->currentTableName.' '.$data;
-        $this->bind();
-        return $sql;
-    }
-
-    private function updateSql($data){
-        $sql='update '.$this->currentTableName.' set '.$data.$this->getOption();
-        $this->bind();
-        return $sql;
-    }
-
-    private function deleteSql(){
-        $sql='delete from '.$this->currentTableName.$this->getOption();
-        $this->bind();
-        return $sql;
-    }
 
     public static function query($sql,$param=null){
-        $db=PDODriver::instance();
+        self::checkDb();
         if($param!=null){
-            $db->bind(is_array($param)?$param:array($param));
+            self::$db->bind(is_array($param)?$param:array($param));
         }
-        return $db->select($sql);
+        return self::$db->select($sql);
     }
     
     public static function execute($sql,$param=null){
-        $db=PDODriver::instance();
+        self::checkDb();
         if($param!=null){
-            $db->bind(is_array($param)?$param:array($param));
+            self::$db->bind(is_array($param)?$param:array($param));
         }
-        return $db->execute($sql);
+        return self::$db->execute($sql);
     }
 
     private function getData($data){
@@ -295,22 +320,8 @@ class Db {
     }
     
     public function where($column,$mixed,$param=null){
-        if($param===null){
-            $condition='=';
-            $param=$mixed;
-        }else{
-            $condition=$mixed;
-        }
-        $sql='';
-        $data=null;
-        if($condition=='in'){
-            $sql=self::whereIn($column,$param);
-            $data=$param;
-        }else{
-            $sql='`'.$column.'`'.' '.$condition.' ?';
-            $data=array($param);
-        }
-        $this->buildWhereOption($data,$sql);
+        $args=$this->parseWhere($column,$mixed,$param);
+        $this->buildWhereOption($args[0],$args[1]);
         return $this;
     }
     
@@ -320,7 +331,13 @@ class Db {
         }
         return $this->where($column,$mixed,$param);
     }
-
+    
+    private static function whereIn($column,$condition,array $array){
+        $sql=str_repeat(',?',count($array));
+        $sql=substr($sql,1);
+        $sql='`'.$column.'` '.$condition.' ('.$sql.')';
+        return $sql;
+    }
 
     public function condition($condition){
         if(empty($condition)){
@@ -332,24 +349,33 @@ class Db {
         return $this;
     }
     
-    public function whereOr($column,$mixed,$param=null,$group=null){
+    private function parseWhere($column,$mixed,$param=null){
         if($param===null){
             $condition='=';
             $param=$mixed;
         }else{
             $condition=$mixed;
         }
-        $group=$group===null?'db':$group;
         $sql='';
         $data=null;
-        if($condition=='in'){
-            $sql=self::whereIn($column,$param);
+        $condition=strtoupper($condition);
+        if(strpos($condition,'BETWEEN')!==false&&is_array($param)){
+            $sql='`'.$column.'`'.' '.$condition.' ? AND ?';
+            $data=array($param);
+        }else if(is_array($param)){  
+            $sql=self::whereIn($column,$condition,$param);
             $data=$param;
         }else{
             $sql='`'.$column.'`'.' '.$condition.' ?';
             $data=array($param);
         }
-        $this->buildOrOption($data,$sql,$group);
+        return array($data,$sql);
+    }
+    
+    public function whereOr($column,$mixed,$param=null,$group=null){
+        $args=$this->parseWhere($column,$mixed,$param);
+        $group=$group===null?'db':$group;
+        $this->buildOrOption($args[0],$args[1],$group);
         return $this;
     }
     
@@ -373,7 +399,7 @@ class Db {
     }
     
     public function order($order){
-        $this->options['order']='order by '.$order;
+        $this->options['order']='ORDER BY '.$this->buildFeilds($order);
         return $this;
     }
     
@@ -403,7 +429,7 @@ class Db {
     }
     
     public function group($group){
-        $this->options['group']='group by '.$group;
+        $this->options['group']='GROUP BY '.$this->buildFeilds($group);
         return $this;
     }
     
@@ -414,13 +440,13 @@ class Db {
         $args=func_get_args();
         array_shift($args);
         $this->options['havingParam']=array_merge($this->options['havingParam'],$args);
-        $this->options['having']='having '.$having;
+        $this->options['having']='HAVING '.$having;
         return $this;
     }
     
     public function join($table,$condition,$type='inner'){
         $currentTable=self::getCurrentTableName($table);
-        $this->options['join'][]=$type.' join '.$currentTable.' on '.$condition;
+        $this->options['join'][]=$type.' JOIN '.$currentTable.' ON '.$condition;
         return $this;
     }
     
@@ -480,19 +506,19 @@ class Db {
         $option='';
         $optionWhere=array();
         if(isset($this->options['where'])&&!empty($this->options['where'])){
-            $optionWhere[]='('.implode(') and (', $this->options['where']).')';
+            $optionWhere[]='('.implode(') AND (', $this->options['where']).')';
         }
         if(isset($this->options['or'])&&!empty($this->options['or'])){
             $tempArr=array();
             foreach ($this->options['or'] as $key=>$value){
-                $tempArr[]='('.implode(') or (', $value).')';
+                $tempArr[]='('.implode(') OR (', $value).')';
                 $params=$this->options['orParam'][$key];
                 $this->options['whereParam']=array_merge($this->options['whereParam'],$params);
             }
-            $optionWhere[]='('.implode(') and (', $tempArr).')';
+            $optionWhere[]='('.implode(') AND (', $tempArr).')';
         }
         if(!empty($optionWhere)){
-            $option.=' where '.implode(' and ',$optionWhere);
+            $option.=' WHERE '.implode(' AND ',$optionWhere);
         }
         if(isset($this->options['group'])){
             $option.=' '.$this->options['group'];
@@ -510,7 +536,7 @@ class Db {
     }
 
     public static function union($column,Db $db1,Db $db2,$all=false){
-        $union=$all?'union all':'union';
+        $union=$all?'UNION ALL':'UNION';
         $sql=$db1->sql()->select($column).' '.$union.' '.$db2->sql()->select($column);
         return $this->query($sql);
     }

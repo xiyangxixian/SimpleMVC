@@ -48,6 +48,9 @@ class PDODriver extends Driver{
         $stmt->execute($this->param);
         $row=$stmt->fetch(PDO::FETCH_ASSOC);
         $this->param=null;
+        if($row===false){
+            return null;
+        }
         return $row;
     }
     

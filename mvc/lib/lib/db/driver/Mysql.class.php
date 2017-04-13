@@ -42,7 +42,7 @@ class Mysql extends Driver{
         $this->initConnect();
         $stmt=$this->conn->prepare($sql);
         $method=new \ReflectionMethod($stmt,'bind_param');
-        $method->invokeArgs($stmt, $this->refValues($this->param));
+        $method->invokeArgs($stmt, $this->refValues($this->param,$sql));
         $result=$stmt->execute();
         $this->param=null;
         return $result;
@@ -52,14 +52,11 @@ class Mysql extends Driver{
         $this->initConnect();
         $stmt=$this->conn->prepare($sql);
         $method=new \ReflectionMethod($stmt, 'bind_param');
-        $method->invokeArgs($stmt, $this->refValues($this->param));
+        $method->invokeArgs($stmt, $this->refValues($this->param,$sql));
         $stmt->execute();
         $result=$stmt->get_result();
         $row=$result->fetch_assoc();
         $this->param=null;
-        if(!$result){
-            return null;
-        }
         return $row;
     }
     
@@ -67,7 +64,7 @@ class Mysql extends Driver{
         $this->initConnect();
         $stmt=$this->conn->prepare($sql);
         $method=new \ReflectionMethod($stmt, 'bind_param');
-        $method->invokeArgs($stmt, $this->refValues($this->param));
+        $method->invokeArgs($stmt,$this->refValues($this->param,$sql));
         $stmt->execute();
         $result=$stmt->get_result();
         $arr=array();
@@ -84,11 +81,19 @@ class Mysql extends Driver{
         }
     }
     
-    private function refValues($arr){
+    private function refValues($arr,&$sql){
+        $nPos = 0;
         $type='';
         $refs = array();  
         foreach($arr as $key=>$value){
-            $refs[$key]=&$arr[$key];  
+            if (($nPos = strpos($sql, '?', $nPos + 1)) === false){ 
+                continue;
+            }
+            if($value===null){
+                $sql=substr_replace($sql,'NULL',$nPos, 1);
+                continue;
+            }
+            $refs[$key]=&$arr[$key];
             $type.=substr(gettype($value),0,1);
         }
         array_unshift($refs,$type);
