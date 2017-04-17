@@ -12,6 +12,10 @@ abstract class Driver {
 
     private function __construct() {}
     
+    /**
+     * 单例实现
+     * @return Driver
+     */
     public static function instance(){
         if(self::$insrance==null){
             self::$insrance=new static();

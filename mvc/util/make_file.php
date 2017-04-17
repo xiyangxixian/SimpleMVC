@@ -35,6 +35,12 @@ function make_file() {
     }
     
     //初始化文件
+    $moduleViewDir=APP_PATH .'modules/view';
+    if (!is_dir($moduleViewDir)) {
+        mkdir($moduleViewDir, 755, true);
+    }
+    
+    //初始化文件
     $requireFile = APP_PATH .'modules/'.$module.'/init.php';
     if (!file_exists($requireFile)) {
         $file = fopen($requireFile, "x+");

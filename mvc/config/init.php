@@ -1,5 +1,12 @@
 <?php
-
+/**
+ * 加载配置项，支持三层的配置项获取
+ * @staticvar array $config
+ * @param string $key1 1级key
+ * @param string $key2 2级key
+ * @param string $key3 3级key
+ * @return $mixed
+ */
 function config($key1=null,$key2=null,$key3=null){
     static $config=null;
     if($config==null){

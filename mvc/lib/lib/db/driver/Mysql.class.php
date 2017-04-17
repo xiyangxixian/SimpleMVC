@@ -84,6 +84,7 @@ class Mysql extends Driver{
     private function refValues($arr,&$sql){
         $nPos = 0;
         $type='';
+        $typeArr=array('i','s','d');
         $refs = array();  
         foreach($arr as $key=>$value){
             if (($nPos = strpos($sql, '?', $nPos + 1)) === false){ 
@@ -94,7 +95,12 @@ class Mysql extends Driver{
                 continue;
             }
             $refs[$key]=&$arr[$key];
-            $type.=substr(gettype($value),0,1);
+            $thitype=gettype($value);
+            if(in_array($thitype,$typeArr)){
+                $type.=substr($thitype,0,1);
+            }else{
+                $type.='s';
+            }
         }
         array_unshift($refs,$type);
         return $refs;
