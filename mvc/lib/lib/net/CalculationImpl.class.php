@@ -56,8 +56,8 @@ class CalculationImpl implements Calculation{
                 array_pop($this->outputArray);
                 $tempArray[] = $oldArray[$i - 1];
             } else {
-                $oldQuotient= $quotient;
-                $this->outputArrayarray()=[$oldArray[$i],$prefix];
+                $oldQuotient=$quotient;
+                $this->outputArray[]=[$oldArray[$i],$prefix];
             }
         }
         return $tempArray;

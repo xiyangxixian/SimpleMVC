@@ -59,7 +59,11 @@ class NewRouter {
     private function formatIntToIp($ipArray){
         $tempArray=array();
         foreach ($ipArray as $ip){
-            $tempArray[]=IP::intToIp($ip[0]). '/'.$ip[1];
+            if($ip[1]=='32'){
+                $tempArray[]=IP::intToIp($ip[0]);
+            }else{
+                $tempArray[]=IP::intToIp($ip[0]). '/'.$ip[1];
+            }
         }
         return $tempArray;
     }

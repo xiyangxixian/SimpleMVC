@@ -7,6 +7,7 @@ return array(
             'DB_PWD' => '',           //数据库密码
             'DB_NAME' => '',           //数据库名
             'DB_PREFIX' => '',          //表前缀
+            'DB_MAP' => '',          //表名和字段名映射方式
             'DB_TYPE' => ''          //数据库类型，为mysqli时，为mysqli驱动，其他则为pdo驱动
         ),
     'ROUTER_TYPE'=>'default',          //路由模式,默认为参数模式，path_info则为PATHINFO模式

@@ -18,6 +18,11 @@ class Model extends Db{
         $this->attribute=$attribute;
     }
     
+    public static function map($className){
+        return Entity::map($className);
+    }
+
+
     /**
      * 返回模型名字，对应表名称，默认为类名称
      * @return string
@@ -37,7 +42,7 @@ class Model extends Db{
         if($key==null){
             return $this->attribute;
         }
-        return isset($this->attribute[$key])?$this->attribute[$key]:$default;
+        return isset($this->attribute[$key])&&Validate::required($this->attribute[$key])?$this->attribute[$key]:$default;
     }
 
     /**

@@ -74,16 +74,17 @@ class Db {
     /**
      * 获取别名，包括表别名和字段别名，中括号内的视为别名，如'tableName[name]'
      * @param string $str
-     * @return string
+     * @return array
      */
-    private static function getAlias($str){
-        $result=preg_match('/\[(.+?)\]/',$str,$m);
+    public static function getAlias($str){
         $alias=null;
-        if($result&&isset($m[1])){
-            $alias='`'.($m[1]).'`';
-            $str=preg_replace('/\[(.+?)\]/','',$str);
+        $name=$str;
+        if(($offset=strpos($str,'['))>0){
+            $name=substr($str,0,$offset);
+            $alias=substr($str,$offset);
+            $alias=str_replace(array('[',']'),'',$alias);
         }
-        return array($str,$alias);
+        return array($name,$alias);
     }
     
     /**
@@ -108,6 +109,7 @@ class Db {
      * 初始化参数
      */
     private function initOptions(){
+        $this->options=array();
         $this->options['where']=array();   //where条件参数
         $this->options['whereParam']=array();  //where值参数
         $this->options['dataParam']=array();  //data值参数
@@ -116,6 +118,7 @@ class Db {
         $this->options['havingParam']=array();  //having条件参数
         $this->options['join']=array();  //join条件参数
         $this->options['join'][]=$this->currentTableName;
+        $this->options['order']=array();  //order条件参数
         $this->options=array_merge($this->options,$this->saveOption);
     }
     
@@ -124,6 +127,7 @@ class Db {
      */
     public function saveOptions(){
         $this->saveOption=$this->options;
+        return $this;
     }
     
     /**
@@ -141,13 +145,18 @@ class Db {
      * 表达式规律为：字段名|函数名:参数1:参数2...:参数n[别名]
      * @return type
      */
-    public function find($column=null){
+    public function find(){
+        $column=func_get_args();
         $sql=$this->selectSql($column);
         if(isset($this->options['sql'])){
             return $this->getSql($sql);
         }
         $this->initOptions();
         return self::$db->find($sql);
+    }
+    
+    public function rowCount(){
+        return $this->db->rowCount();
     }
     
     /**
@@ -200,7 +209,7 @@ class Db {
     
     /**
      * 查询一条数据
-     * @param mixed $column 查询的字段，用逗号隔开，也可为数组如find('name,age')等同于find(array('name','age'))
+     * @param mixed $column 查询的字段，用逗号隔开，也可为数组如find('name','age')等同于find(array('name','age'))
      * 支持函数表达式find('id|count')等同于find(count(`id`))；find('age|round:2')等同于find(array('round(`age`,2)'))只有，round中有逗号，只能用数组表示字段
      * 表达式规律为：字段名|函数名:参数1:参数2...:参数n[别名]
      * @return type
@@ -212,12 +221,13 @@ class Db {
     
     /**
      * 查询一条数据
-     * @param mixed $column 查询的字段，用逗号隔开，也可为数组如find('name,age')等同于find(array('name','age'))
-     * 支持函数表达式find('id|count')等同于find(count(`id`))；find('age|round:2')等同于find(array('round(`age`,2)'))只有，round中有逗号，只能用数组表示字段
+     * @param mixed $column 查询的字段，用逗号隔开，也可为数组如select('name','age')或者select(array('name','age'));
+     * 支持函数表达式select('id|count')等同于select(count(`id`))；select('age|round:2')等同于select('round(`age`,2)')只有，round中有逗号，只能用数组表示字段
      * 表达式规律为：字段名|函数名:参数1:参数2...:参数n[别名]
-     * @return type
+     * @return DbResult;
      */
-    public function select($column=null){
+    public function select(){
+        $column=func_get_args();
         $sql=$this->selectSql($column);
         if(isset($this->options['sql'])){
             return $this->getSql($sql);
@@ -231,7 +241,7 @@ class Db {
      * @param array $data 添加的数据
      * @return bool
      */
-    public function add(array $data=null){
+    public function add($data){
         $currentData=$this->getData($data);
         $sql=$this->insertSql('('.  $this->getKeys($currentData).') VALUES ('.$this->getValues($currentData).')');
         if(isset($this->options['sql'])){
@@ -246,7 +256,7 @@ class Db {
      * @param array $data 添加的数据
      * @return bool
      */
-    public function addAll(array $data=null){
+    public function addAll(array $data){
        $currentData=$this->getData($data);
        $dataArray=array();
        foreach ($currentData as $item){
@@ -260,13 +270,13 @@ class Db {
        $this->initOptions();
        return self::$db->execute($sql);
     }
-    
+
     /**
      * 更新数据，成功时发回true，失败时返回false
      * @param array $data 更新的数据
      * @return bool
      */
-    public function update(array $data=null){
+    public function update($data){
         $currentData=$this->getData($data);
         $sql=$this->updateSql($this->setKeyAndValue($currentData));
         if(isset($this->options['sql'])){
@@ -327,7 +337,10 @@ class Db {
      * @return string
      */
     private function selectSql($column){
-        $distinct=isset($this->options['distinct'])?'DISTINST ':'';
+        if(isset($column[0])&&is_array($column[0])){
+            $column=$column[0];
+        }
+        $distinct=isset($this->options['distinct'])?'DISTINCT ':'';
         $sql='SELECT '.$distinct.$this->buildFeilds($column).' FROM '.$this->buildJoin().$this->getOption();
         $this->bind();
         return $sql;
@@ -367,16 +380,15 @@ class Db {
     
     /**
      * 将查询的字段表达式，转换为SQL语句
-     * @param string $column 多个字段用逗号隔开，也可以为数组
+     * @param string $column
      * @return string
      */
     private function buildFeilds($column){
-        if(empty($column)||$column=='*'){
+        if(empty($column)){
             return '*';
         }
-        $columns=is_array($column)?$column:explode(',', $column);
         $arr=array();
-        foreach ($columns as $value){
+        foreach ($column as $value){
             $arr[]=$this->formatFeild($value);
         }
         return implode(',', $arr);
@@ -454,10 +466,7 @@ class Db {
      * @return array
      */
     private function getData($data){
-        if($data!=null){
-            $this->options['data']=$data;
-        }
-        return isset($this->options['data'])?$this->options['data']:array();
+        return is_array($data)?$data:array();
     }
 
     /**
@@ -516,7 +525,7 @@ class Db {
      * @return \lib\db\Db
      */
     public function xwhere($column,$mixed,$param=null){
-        if(empty($param)||($param!==null&&empty($param))){
+        if(($param==null&&(empty($mixed)&&$mixed!='0'))||($param!==null&&(empty($param)&&$param!='0'))){
             return $this;
         }
         return $this->where($column,$mixed,$param);
@@ -561,7 +570,7 @@ class Db {
     private static function whereIn($column,$condition,array $array){
         $sql=str_repeat(',?',count($array));
         $sql=substr($sql,1);
-        $sql='`'.$column.'` '.$condition.' ('.$sql.')';
+        $sql=$column.' '.$condition.' ('.$sql.')';
         return $sql;
     }
 
@@ -597,16 +606,17 @@ class Db {
         $sql='';
         $data=null;
         $condition=strtoupper($condition);
+        $column=$this->formatFeild($column);
         if(strpos($condition,'BETWEEN')!==false&&is_array($param)){
             //between and
-            $sql='`'.$column.'`'.' '.$condition.' ? AND ?';
+            $sql=$column.' '.$condition.' ? AND ?';
             $data=array($param);
         }else if(is_array($param)){
             // in ()
             $sql=self::whereIn($column,$condition,$param);
             $data=$param;
         }else{
-            $sql='`'.$column.'`'.' '.$condition.' ?';
+            $sql=$column.' '.$condition.' ?';
             $data=array($param);
         }
         return array($data,$sql);
@@ -638,22 +648,12 @@ class Db {
     }
     
     /**
-     * 设置添加或者更新的数据
-     * @param array $data
-     * @return \lib\db\Db
-     */
-    public function data(array $data){
-        $this->options['data']=$data;
-        return $this;
-    }
-    
-    /**
      * order by语句
      * @param string $order 支持字段表达式，同select
      * @return \lib\db\Db
      */
-    public function order($order){
-        $this->options['order']='ORDER BY '.$this->buildFeilds($order);
+    public function order($order,$type='ASC'){
+        $this->options['order'][]=$this->formatFeild($order).' '.strtoupper($type);
         return $this;
     }
     
@@ -699,7 +699,8 @@ class Db {
      * @param type $group
      * @return \lib\db\Db
      */
-    public function group($group){
+    public function group(){
+        $group=func_get_args();
         $this->options['group']='GROUP BY '.$this->buildFeilds($group);
         return $this;
     }
@@ -757,7 +758,7 @@ class Db {
      * @return \lib\db\Db
      */
     public function distinct(){
-        $this->options[distinct]=true;
+        $this->options['distinct']=true;
         return $this;
     }
     
@@ -833,11 +834,11 @@ class Db {
         if(isset($this->options['having'])){
             $option.=' '.$this->options['having'];
         }
-        if(isset($this->options['order'])){
-            $option.=' '.$this->options['order'];
+        if(!empty($this->options['order'])){
+            $option.='ORDER BY '.implode(',', $this->options['order']);
         }
         if(isset($this->options['offest'])){
-            $option.=' limit '.$this->options['offest'].','.$this->options['length'];
+            $option.=' LIMIT '.$this->options['offest'].','.$this->options['length'];
         }
         return $option;
     }
@@ -854,6 +855,10 @@ class Db {
         $union=$all?'UNION ALL':'UNION';
         $sql=$db1->sql()->select($column).' '.$union.' '.$db2->sql()->select($column);
         return self::query($sql);
+    }
+    
+    public static function close(){
+        self::$db->close();
     }
     
 }

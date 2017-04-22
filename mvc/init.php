@@ -4,7 +4,7 @@ use lib\db\Db;
 //应用目录
 defined('APP_PATH') or define("APP_PATH", __dir__.'/app/');
 // 定义应用目录
-defined('MOUDLE') or define("MOUDLE",'home');
+defined('MODULE') or define("MODULE",'home');
 //定义改入口所包含的模块
 defined('DEBUG') or define("DEBUG",true);
 //定义框架目录

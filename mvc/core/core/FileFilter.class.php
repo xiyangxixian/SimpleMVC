@@ -39,11 +39,11 @@ class FileFilter{
             $len=0;
         }else{
             $file=$this->file[$key];
-            $len=count($file['name']);
+            $len=empty($file)?0:count($file['name']);
         }
         $out=array();
         for($i=0;$i<$len;$i++){
-            $file=$this->doFilter(array(
+            $uploadFile=$this->doFilter(array(
                 'name'=>$file['name'][$i],
                 'type'=>$file['type'][$i],
                 'tmp_name'=>$file['tmp_name'][$i],
@@ -51,7 +51,7 @@ class FileFilter{
                 'error'=>$file['error'][$i]
             ));
             if($file!=null){
-                $out[]=$file;
+                $out[]=$uploadFile;
             }else if($all){
                 return null;
             }

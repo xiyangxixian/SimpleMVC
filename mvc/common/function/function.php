@@ -97,6 +97,33 @@ function load_app($class){
     }
 }
 
+function doc_parse($doc){
+    $result=array();
+    if($doc===false||preg_match_all('/^\s*\*\s*(@.*)/m',$doc,$lines)===0){
+        return $result;
+    }
+    foreach ($lines[1] as $line){
+        $line=rtrim($line);
+        if (($offset=strpos($line,' '))>0) {
+            $param=substr($line,1,$offset-1 );  
+            $value=ltrim(substr($line,strlen($param)+2)); // Get the value  
+        } else {  
+            $param=substr($line,1);  
+            $value='';  
+        }
+        if($param!='param'&&$param!='return'&&$param!='throw'){
+            if(!isset($result[$param])){
+                $result[$param]=$value;
+            }else if(!is_array($result[$param])){
+                $result[$param]=array($result[$param],$value);
+            }else{
+                $result[$param][]=$value;
+            }
+        }
+    }
+    return $result;
+}
+
 /**
  * 下划线转驼峰
  * @param string $char 输入字符串
@@ -284,12 +311,13 @@ function volist(array $array,callable $output,callable $empty=null,$offest=0,$le
  * @param callable $output 循环时输出函数，并传入值和索引
  * @param callable $empty 数组为空时输出的函数
  */
-function voeach(array $array,callable $output,callable $empty=null){
-    if(empty($array)&&$empty!=null){
-        $empty();
-        return;
-    }
+function voeach($array,callable $output,callable $empty=null){
+    $isEmpty=true;
     foreach($array as $k=>$v){
         $output($v,$k);
+        $isEmpty=false;
+    }
+    if($isEmpty&&$empty!=null){
+        $empty();
     }
 }

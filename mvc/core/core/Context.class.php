@@ -227,8 +227,13 @@ class Context {
      * @return mixed
      */
     private function invoke($method,$instance,$params){
-        if(!empty($this->currentMethod)&&(($this->currentMethod=='post'&&!request()->isPost())||($this->currentMethod=='get'&&!request()->isGET()))){
-            response()->noFound(config('404_PAGE'));
+        $docArr=doc_parse($method->getDocComment());
+        if(isset($docArr['method'])&&!empty($docArr['method'])&&strtoupper($docArr['method'])!=request()->method()){
+            if(isset($docArr['redirect'])){
+                response()->redirect($docArr['redirect']);
+            }else{
+                response()->noFound(config('404_PAGE'));
+            }
             return;
         }
         $result=$method->invokeArgs($instance,$params);

@@ -67,12 +67,7 @@ class Mysql extends Driver{
         $method->invokeArgs($stmt,$this->refValues($this->param,$sql));
         $stmt->execute();
         $result=$stmt->get_result();
-        $arr=array();
-        while ($row=$result->fetch_assoc()){
-            $arr[]=$row;
-        }
-        $this->param=null;
-        return $arr;
+        return new \lib\db\MysqliResult($result);
     }
 
     public function close(){

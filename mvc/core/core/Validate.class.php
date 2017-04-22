@@ -81,8 +81,19 @@ class Validate {
      * 设置验证场景
      * @param array $arr 设置验证的字段
      */
-    public function scene (array $arr){
+    public function scene(array $arr){
         $this->scene=$arr;
+    }
+    
+    /**
+     * 设置规则
+     * @param 字段 $key
+     * @param 规则 $rule
+     * @return \core\Validate
+     */
+    public function rule($key,$rule){
+        $this->rules[$key]=$rule;
+        return $this;
     }
     
     /**

@@ -2,7 +2,7 @@
 
 function make_file() {
     
-    $moduleArr=explode(',',MOUDLE);
+    $moduleArr=explode(',',MODULE);
     $module=$moduleArr[0];
     
     //主文件夹
@@ -93,7 +93,7 @@ function make_file() {
     namespace modules\\'.$module.'\\controller;
     class Index{
         public function index(){
-            view();
+            return view();
         }
     }';
         fwrite($file, $txt);

@@ -8,6 +8,7 @@ abstract class Driver {
     protected $conn=null;
     protected $config=null;
     protected static $insrance=null;
+    protected $rowCount=0;
 
 
     private function __construct() {}
@@ -44,6 +45,10 @@ abstract class Driver {
 
     protected function err($error) {
         throw new Exception('error：' . $error);
+    }
+    
+    public function rowCount(){
+        return $this->rowCount;
     }
     
     abstract function connect();

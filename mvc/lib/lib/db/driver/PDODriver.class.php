@@ -3,6 +3,7 @@
 namespace lib\db\driver;
 use lib\db\Driver;
 use PDO;
+use lib\db\DbResult;
 
 class PDODriver extends Driver{
     
@@ -38,6 +39,7 @@ class PDODriver extends Driver{
         $this->initConnect();
         $stmt=$this->conn->prepare($sql);
         $result=$stmt->execute($this->param);
+        $this->rowCount=$stmt->rowCount();
         $this->param=null;
         return $result;
     }
@@ -58,12 +60,7 @@ class PDODriver extends Driver{
         $this->initConnect();
         $stmt=$this->conn->prepare($sql);
         $stmt->execute($this->param);
-        $arr=array();
-        while ($row=$stmt->fetch(PDO::FETCH_ASSOC)){
-            $arr[]=$row;
-        }
-        $this->param=null;
-        return $arr;
+        return new \lib\db\PDOResult($stmt);
     }
 
     public function close(){

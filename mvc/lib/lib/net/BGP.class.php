@@ -30,7 +30,11 @@ class BGP {
     }
     
     public function initSocket(){
-        $this->socket=socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+        if($this->socket==null){
+            $this->socket=socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+        }else{
+            socket_close($this->socket);
+        }
         $this->conn=socket_connect($this->socket,  self::$ROUTER_IP,self::$PORT);
         if(!$this->conn){
             echo "网络连接错误\n";
@@ -116,8 +120,10 @@ class BGP {
         }
         $length=51+count($router);
         $lengtharr=$this->getBits($length);
-        
-        $data=pack("C".$length,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
+        $function=new \ReflectionFunction('pack');
+        $args=array('C'.$length);
+        $args=array_merge($args,array(
+            0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
                 $lengtharr[0],$lengtharr[1],self::$UPDATE_MSG,//数据包长度2字节and消息类型1字节
                 0,0,//撤回路由消息长度2字节
                 0,28,//路由属性2字节
@@ -126,9 +132,9 @@ class BGP {
                 //0x40,0x02,0x04,0x02,0x01,$asArray[0],$asArray[1],//AS_PATH 4字节
                 0x40,0x03,0x04,$nextHop[0],$nextHop[1],$nextHop[2],$nextHop[3],//下一条地址 7字节
                 0x80,0x04,0x04,0,0,0,20,//MED 7字节
-                0x40,0x05,0x04,0,0,0,100,//Local_Pref 100
-                ...$router
-            );
+                0x40,0x05,0x04,0,0,0,100//Local_Pref 100
+        ),$router);
+        $data=$function->invokeArgs($args);
         return socket_write($this->socket, $data);
     }
 
@@ -174,14 +180,16 @@ class BGP {
         
         $router[]=0;
         $router[]=0;
-        $data=pack("C".$length,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
+        
+        
+        $function=new \ReflectionFunction('pack');
+        $args=array('C'.$length);
+        $args=array_merge($args,array(
+            0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
                 $lengtharr[0],$lengtharr[1],self::$UPDATE_MSG,
-                $roulenarr[0],$roulenarr[1],//撤回路由消息长度2字节
-                ...$router
-//                32,//撤回路由IP地址子网长度
-//                $ipArray[0],$ipArray[1],$ipArray[2],$ipArray[3],//撤回路由IP地址
-//                0,0//路由属性长度
-            );
+                $roulenarr[0],$roulenarr[1]//撤回路由消息长度2字节
+        ),$router);
+        $data=$function->invokeArgs($args);
         return socket_write($this->socket, $data);
     }
     
