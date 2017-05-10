@@ -21,11 +21,11 @@ function config($key1=null,$key2=null,$key3=null){
         return $config;
     }
     if($key2===null){
-        return $config[$key1];
+        return isset($config[$key1])?$config[$key1]:'';
     }
     if($key3==null){
-        return $config[$key1][$key2];
+        return isset($config[$key1][$key2])?$config[$key1][$key2]:'';
     }
-    return $config[$key1][$key2][$key3];
+    return isset($config[$key1][$key2][$key3])?$config[$key1][$key2][$key3]:'';
 }
 
