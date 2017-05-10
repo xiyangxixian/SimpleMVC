@@ -81,8 +81,24 @@ class Validate {
      * 设置验证场景
      * @param array $arr 设置验证的字段
      */
-    public function scene(array $arr){
+    public function scene($arr){
         $this->scene=$arr;
+        return $this;
+    }
+    
+    
+    /**
+     * 设置不需要验证的字段
+     * @param array $arr 设置验证的字段
+     */
+    public function unScene($arr){
+        if(!is_array($arr)){
+            return $this;
+        }
+        foreach ($arr as $value){
+            unset($this->rules[$value]);
+        }
+        return $this;
     }
     
     /**
@@ -220,7 +236,7 @@ class Validate {
             return true;
         }else{
             $msgs=is_array($msg)?$msg:explode('|', $msg);
-            $currentMsg=empty($msgs)?'':isset($msgs[$result])?$msgs[$result]:array_pop($msg);
+            $currentMsg=empty($msgs)?'':isset($msgs[$result])?$msgs[$result]:array_pop($msgs);
             return $currentMsg;
         }
     }

@@ -8,6 +8,7 @@ use core\Cookie;
 use core\View;
 use lib\db\Db;
 use lib\util\HashTable;
+use core\Model;
 
 /**
  * 快速实例化Request类
@@ -63,6 +64,15 @@ function view($file=null){
  */
 function db($table){
     return Db::table($table);
+}
+
+/**
+ * 快速实例化Db类
+ * @param string $table 表名称，不带前缀，表全名用“/表全名”表示,否则自动加上配置文件中的表前缀
+ * @return lib\db\Db
+ */
+function model($className){
+    return Model::map($className);
 }
 
 /**
@@ -295,7 +305,7 @@ function doubleval_array(array $array){
 function volist(array $array,callable $output,callable $empty=null,$offest=0,$length=null,$step=1){
     if(empty($array)&&$empty!=null){
         $empty();
-        return;
+        return false;
     }
     $len=count($array);
     $end=$length==null?$len:$offest+$length*$step;
@@ -303,6 +313,7 @@ function volist(array $array,callable $output,callable $empty=null,$offest=0,$le
     for($i=$offest;$i<$end;$i+=$step){
         $output($array[$i],$i);
     }
+    return true;
 }
 
 /**
@@ -320,4 +331,5 @@ function voeach($array,callable $output,callable $empty=null){
     if($isEmpty&&$empty!=null){
         $empty();
     }
+    return !$isEmpty;
 }

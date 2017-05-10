@@ -459,7 +459,12 @@ class Db {
         }
         return self::$db->execute($sql);
     }
-
+    
+    public static function exec($sql){
+        self::checkDb();
+        return self::$db->exec($sql);
+    }
+    
     /**
      * 获取添加或者更新的数据
      * @param string $data
@@ -610,7 +615,7 @@ class Db {
         if(strpos($condition,'BETWEEN')!==false&&is_array($param)){
             //between and
             $sql=$column.' '.$condition.' ? AND ?';
-            $data=array($param);
+            $data=$param;
         }else if(is_array($param)){
             // in ()
             $sql=self::whereIn($column,$condition,$param);
@@ -859,6 +864,18 @@ class Db {
     
     public static function close(){
         self::$db->close();
+    }
+    
+    public static function beginTransaction(){
+        self::$db->beginTransaction();
+    }
+    
+    public static function commit(){
+        self::$db->commit();
+    }
+    
+    public static function rollBack(){
+        self::$db->rollBack();
     }
     
 }
