@@ -3,7 +3,6 @@
 namespace lib\db\driver;
 use lib\db\Driver;
 use PDO;
-use lib\db\DbResult;
 
 class PDODriver extends Driver{
     
@@ -67,6 +66,19 @@ class PDODriver extends Driver{
         if($this->conn!=null){
             $this->conn=null;
         }
+    }
+    
+    public function beginTransaction(){
+        $this->initConnect();
+        $this->conn->beginTransaction();
+    }
+    
+    public function commit(){
+        $this->conn->commit();
+    }
+    
+    public function rollBack(){
+       $this->conn->rollBack();
     }
     
 }

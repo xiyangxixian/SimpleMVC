@@ -100,6 +100,19 @@ class Mysql extends Driver{
         array_unshift($refs,$type);
         return $refs;
     }
+	
+    public function beginTransaction(){
+        $this->initConnect();
+        $this->conn->begin_transaction();
+    }
+    
+    public function commit(){
+        $this->conn->commit();
+    }
+    
+    public function rollBack(){
+       $this->conn->rollback();
+    }
     
     
 }

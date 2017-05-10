@@ -54,6 +54,7 @@ abstract class Driver {
     abstract function connect();
     abstract function query($sql);
     abstract function execute($sql);
+    abstract function exec($sql);
     
     public function close(){
         if($this->conn!=null){

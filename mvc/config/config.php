@@ -8,7 +8,7 @@ return array(
             'DB_NAME' => '',           //数据库名
             'DB_PREFIX' => '',          //表前缀
             'DB_MAP' => '',          //表名和字段名映射方式
-            'DB_TYPE' => ''          //数据库类型，为mysqli时，为mysqli驱动，其他则为pdo驱动
+            'DB_TYPE' => ''          //实体类和数据库字段名映射方式，支持hump（大驼峰），smallHumnp（小驼峰），hump_to_small（小写下划线）
         ),
     'ROUTER_TYPE'=>'default',          //路由模式,默认为参数模式，path_info则为PATHINFO模式
     'ROUTER'=>array(                   //路由名称配置

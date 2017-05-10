@@ -71,7 +71,10 @@ class Session {
      * @param mixed $default  默认值
      * @return mixed
      */
-    public function get($key,$default=null){
+    public function get($key=null,$default=null){
+        if($key==null){
+            return $_SESSION;
+        }
         return $this->has($key)&&Validate::required($_SESSION[$key])?$_SESSION[$key]:$default;
     }
     
